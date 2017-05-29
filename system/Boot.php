@@ -18,6 +18,7 @@ class Boot
 
     private static function init()
     {
+       
         // Define path constants
         define("DS", DIRECTORY_SEPARATOR);
         define("ROOT", getcwd() . DS);
@@ -39,6 +40,10 @@ class Boot
         define("UPLOAD_PATH", PUBLIC_PATH . "uploads" . DS);
         define("LOG_PATH", ROOT . "log");
         define("MODULES_PATH", ROOT . "modules" . DS);
+        define("CONTROLLERS_NAMESPACE","app\\controllers\\");//Controllers directory do not change
+         //load some general functions
+        include_once CORE_PATH.'functions.php';
+        define("WEBROOT", getWebroot());
         include_once APP_PATH . 'config/config.php';
     }
 
@@ -64,13 +69,13 @@ class Boot
             register_shutdown_function('session_write_close');
             isset($_SESSION) || session_start();
         }
-        include CONFIG_PATH ."assets.php";
-        include CONFIG_PATH .'events.php';
+        //include some assets
+        include CONFIG_PATH . "assets.php";
+        include CONFIG_PATH . 'events.php';
         $router = new Router();
         // Include the routes
-        include "app".DS."routes.php";
+        include "app" . DS . "routes.php";
         Register::modules($router);
         $router->dispatch();
     }
-
 }

@@ -6,7 +6,7 @@ use system\http\Request;
 use system\core\View;
 
 /**
- * Description of Route
+ * Allows to add, match, and dispatch routes
  *
  * @author Daniel Navarro Ramírez
  * @author Manuel Jhobanny Morillo
@@ -45,8 +45,8 @@ class Route
      */
     private $patterns = array(
         "[:any]" => '(.*?)',
-        "[:num]" => "(\d+)",
-        "[:all]" => "\w+",
+        "[:num]" => '(\d+)',
+        "[:all]" => '\w+',
     );
     public $request;
     private $found = FALSE;
@@ -76,11 +76,23 @@ class Route
     {
         $requestUri = $this->request->getUrl();
         $route = $this->url;
-        if (strpos($route, ':')) {
-            $route = '/' . str_replace(array_keys($this->patterns), array_values($this->patterns), $this->url);
-        } elseif ($route !== '/') {
-            $route = '/' . $route;
+        if (WEBROOT != "/" && WEBROOT != '') {//si no estan en la raiz (localhost/directory)
+            if (strpos($route, ':')) {
+                $route = baseUrl('') . '/' . str_replace(array_keys($this->patterns), array_values($this->patterns), $this->url);
+            } elseif ($route !== '/') {
+                $route = baseUrl('') . "/" . $route;
+            } elseif ($route === '/') {
+                $route = baseUrl('');
+            }
+        } else {
+          
+            if (strpos($route, ':')) {
+                $route = '/' . str_replace(array_keys($this->patterns), array_values($this->patterns), $this->url);
+            } elseif ($route !== '/') {
+                $route = "/" . $route;
+            }
         }
+
         $pattern = "@^" . $route . "$@"; //"@^" . $route . "$@";
         if (preg_match($pattern, $requestUri, $matched)) {
             if ($matched[0] === $requestUri) {
@@ -129,8 +141,13 @@ class Route
                     if ($route["action"] instanceof \Closure) {
                         $this->found = TRUE;
                         $route["action"]();
+                        break;
                     } else {
                         $this->controller = $this->removeSpecialChars($this->controller);
+                        $found_namespace = strpos($this->controller,CONTROLLERS_NAMESPACE);//add namespace see Boot.php
+                        if($found_namespace===FALSE){                
+                           $this->controller = CONTROLLERS_NAMESPACE.$this->controller;
+                        }
                         if (class_exists($this->controller)) {//handle double quote string
                             $object = new \stdClass;
                             $object->runs = [];
@@ -142,25 +159,25 @@ class Route
                             if (method_exists($this->controller, $route["after"])) {
                                 $layers[] = new AfterLayer($this->controller, $route["after"]);
                             }
-
-                            $this->onion->layer($layers)
-                                    ->peel($object, function($object) {
-                                        if (isset($this->params)) {
-                                            call_user_func_array(array(new $this->controller, $this->action), $this->params);
-                                        } else {
-                                            call_user_func(array(new $this->controller, $this->action));
-                                        }
-                                        $object->runs[] = 'core';
-                                        return $object;
-                                    });
+                            if (count($layers) > 0) {
+                                $this->onion->layer($layers)
+                                        ->peel($object, function($object) {
+                                            $this->executeDispatch($this->controller, $this->action, $this->params);
+                                            $object->runs[] = 'core';
+                                            return $object;
+                                        });
+                            } else {
+                                $this->executeDispatch($this->controller, $this->action, $this->params);
+                            }
                             $this->found = TRUE;
+                            break;
                         } else {
                             $this->found = FALSE;
                         }
                     }
                 }
             }
-        }
+        }//endforeach
         if (!$this->found) {
             echo $this->view->useTemplate("error")->render("error/404");
         }
@@ -174,8 +191,8 @@ class Route
     public function removeSpecialChars($action)
     {
 
-        $some_special_chars = array("\t", "\n", "\f", "\r","\e","\v");
-        $replacement_chars = array("\\t", "\\n", "\\f", "\\r","\\e","\\v");
+        $some_special_chars = array("\t", "\n", "\f", "\r", "\e", "\v");
+        $replacement_chars = array("\\t", "\\n", "\\f", "\\r", "\\e", "\\v");
         $rep = str_replace($some_special_chars, $replacement_chars, $action);
         return $rep;
     }
@@ -190,12 +207,21 @@ class Route
         if ($action instanceof \Closure) { //closures are ok
             return TRUE;
         } elseif (is_string($action)) {
-            $parts = explode("@", $action); //check if action has correct format do not add them
+            $parts = explode("@", $action); //check if action has correct format do not add them          
             if (count($parts) > 1) {
                 return TRUE;
             }
         } else {
             return FALSE;
+        }
+    }
+
+    private function executeDispatch($controller, $action, $params)
+    {
+        if (isset($params)) {
+            call_user_func_array(array(new $controller, $action), $params);
+        } else {
+            call_user_func(array(new $controller, $action));
         }
     }
 

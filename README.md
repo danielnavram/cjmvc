@@ -13,7 +13,7 @@ Databases supports many drivers (mysql, sqlite, PostgreSQL, mssql, sybase, Oracl
                 <ul>
                     <li>Lightweight Framework</li>
                     <li>Easy to install</li>
-                    <li>NOTORM Database (SOON)</li>
+                    <li>NOTORM Database</li>
                     <li>Templates for each view</li>
                     <li>Many and useful helpers</li>
                     <li>Easy to manage</li>
@@ -26,18 +26,11 @@ Databases supports many drivers (mysql, sqlite, PostgreSQL, mssql, sybase, Oracl
                 </div>
                 <p>Well, you did install the framework but, you need to set some parameters for the correct working.</p>
                 <ol>
+                <li>Create a virtualhost</li>
                     <li>Go to <code>/app/config/config.php</code> and set up your configurations</li>
                     <li>Go to <code>/app/config/database_config.php</code> and set up your connection to your database and his respective table.</li>
-                    <li>Finally set up tou routes on the file <code>/app/Routes.php</code></li>
+                    <li>Finally set up your routes on the file:<code>/app/Routes.php</code></li>
                     <li>Ready to go</li>
                 </ol>
             </div>
 Sorry no composer, batteries included.
-
-
-
-
-
-
-
-
